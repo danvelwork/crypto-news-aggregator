@@ -45,6 +45,40 @@
             margin-bottom: 40px;
             border-bottom: 1px solid #ccc;
             padding-bottom: 20px;
+            padding-top: 20px;
+            padding-right: 120px;
+            padding-left: 120px;
+        }
+
+        .article h2 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        .article p {
+            line-height: 1.6;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .article small {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .article .link {
+            margin-top: 10px;
+        }
+
+        .article .content {
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        .error {
+            color: red;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -79,21 +113,58 @@
                         if (response.ok) {
                             const parser = new DOMParser();
                             const doc = parser.parseFromString(data.contents, 'text/html');
-                            const articleText = doc.body.innerText;
-                            articleDiv.innerHTML = `<h2>Content from ${url}</h2><p>${articleText}</p>`;
+                            const articleTitle = extractTitleFromHTML(doc);
+                            const articleText = extractTextFromHTML(doc.body);
+
+                            articleDiv.innerHTML = `
+                                <h2>${articleTitle}</h2>
+                                <div class="content">
+                                    ${articleText}
+                                </div>
+                                <small>Source: <a href="${url}" target="_blank">${url}</a></small>
+                            `;
                         } else {
-                            articleDiv.innerHTML = `<h2>Content from ${url}</h2><p>Unable to fetch content. Please visit: <a href="${url}" target="_blank">${url}</a></p>`;
+                            articleDiv.innerHTML = `<h2>Unable to fetch content from <a href="${url}" target="_blank">${url}</a></h2>
+                            <p class="error">Please visit the link to read the full content.</p>`;
                         }
 
                         output.appendChild(articleDiv);
                     } catch (error) {
                         const articleDiv = document.createElement('div');
                         articleDiv.classList.add('article');
-                        articleDiv.innerHTML = `<h2>Content from ${url}</h2><p>Unable to fetch content. Please visit: <a href="${url}" target="_blank">${url}</a></p>`;
+                        articleDiv.innerHTML = `<h2>Error fetching content from <a href="${url}" target="_blank">${url}</a></h2>
+                        <p class="error">There was an error fetching the content. Please visit the link directly.</p>`;
                         output.appendChild(articleDiv);
                     }
                 }
             }
+        }
+
+        // Function to extract the title from the HTML
+        function extractTitleFromHTML(doc) {
+            const title = doc.querySelector('title') || doc.querySelector('h1');
+            return title ? title.innerText.trim() : 'No Title Found';
+        }
+
+        // Function to extract text from HTML while removing unnecessary content
+        function extractTextFromHTML(body) {
+            // Remove unnecessary script, style, etc.
+            const scripts = body.querySelectorAll('script, style, noscript, iframe, header, footer');
+            scripts.forEach(script => script.remove());
+
+            // Find all <p> tags and create readable paragraphs
+            const paragraphs = body.querySelectorAll('p');
+            let content = '';
+            paragraphs.forEach(p => {
+                content += `<p>${p.innerText.trim()}</p>`;
+            });
+
+            // If no <p> tags found, fallback to body innerText
+            if (content === '') {
+                content = `<p>${body.innerText.replace(/\s+/g, ' ').trim()}</p>`;
+            }
+
+            return content; // Return the structured paragraphs
         }
     </script>
 
